@@ -39,7 +39,7 @@ public class AudioStreamConverter extends Thread {
 						new AudioStreamConverter(fileName).start();
 					}
 				}
-				Thread.sleep(3000);
+				Thread.sleep(500);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -59,7 +59,7 @@ public class AudioStreamConverter extends Thread {
 			System.out.println(String.format("[%s] Converting: %s", sdf.format(new Date()), audioStream));
 			Process process = Runtime.getRuntime().exec(cmd);
 			process.waitFor();
-			Thread.sleep(30000);
+			Thread.sleep(500);
 			process = Runtime.getRuntime().exec("rm -rf " + urlFile.replace(".mp4", "_android*.mp4"));
 			process.waitFor();
 			process = Runtime.getRuntime().exec("mv -f " + urlFile.replace(".mp4", "*.mp4") + " " + URL_AUDIO_STREAM + "/bkp");
