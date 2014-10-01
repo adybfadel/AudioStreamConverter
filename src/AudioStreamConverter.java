@@ -1,4 +1,9 @@
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,17 +34,19 @@ public class AudioStreamConverter extends Thread {
 
 			try {
 				File dir = new File(URL_AUDIO_STREAM);
-				for (File file : dir.listFiles()) {
-					String fileName = file.getName();
-					if (!fileName.endsWith(".mp4") || fileName.indexOf("_") > -1)
-						continue;
-					fileName = fileName.replace(".mp4", "");
-					if (!listStreams.contains(fileName)) {
-						listStreams.add(fileName);
-						new AudioStreamConverter(fileName).start();
+				if (dir.listFiles() != null) {
+					for (File file: dir.listFiles()) {
+						String fileName = file.getName();
+						if (!fileName.endsWith(".mp4") || fileName.indexOf("_") > -1)
+							continue;
+						fileName = fileName.replace(".mp4", "");
+						if (!listStreams.contains(fileName)) {
+							listStreams.add(fileName);
+							new AudioStreamConverter(fileName).start();
+						}
 					}
 				}
-				Thread.sleep(500);
+				Thread.sleep(1000);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -59,11 +66,7 @@ public class AudioStreamConverter extends Thread {
 			System.out.println(String.format("[%s] Converting: %s", sdf.format(new Date()), audioStream));
 			Process process = Runtime.getRuntime().exec(cmd);
 			process.waitFor();
-			Thread.sleep(500);
-			process = Runtime.getRuntime().exec("rm -rf " + urlFile.replace(".mp4", "_android*.mp4"));
-			process.waitFor();
-			process = Runtime.getRuntime().exec("mv -f " + urlFile.replace(".mp4", "*.mp4") + " " + URL_AUDIO_STREAM + "/bkp");
-			process.waitFor();
+			pigeonhole(audioStream);
 			System.out.println(String.format("[%s] Finished: %s", sdf.format(new Date()), audioStream));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -73,5 +76,57 @@ public class AudioStreamConverter extends Thread {
 		if (file.isFile())
 			listStreams.remove(audioStream);
 	}
+	
+	private void pigeonhole(final String filter) {
+		
+		File dir = new File(URL_AUDIO_STREAM);
+		
+		FilenameFilter textFilter = new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				String lowercaseName = name.toLowerCase();
+				if (lowercaseName.startsWith(filter) && lowercaseName.endsWith(".mp4")) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+		};
+		
+		File[] files = dir.listFiles(textFilter);
+		for (File file: files) {
+			if (!file.isDirectory()) {
+				try {
+					// Soh copia o arquivo principal
+					if (file.getName().equals(filter + ".mp4"))
+						copyFile(file, new File(URL_AUDIO_STREAM + "/bkp/" + file.getName()));
+					file.delete();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+	}
 
+    public static void copyFile(File source, File destination) throws IOException {
+        if (destination.exists())
+            destination.delete();
+        destination.createNewFile();
+
+        FileChannel sourceChannel = null;
+        FileChannel destinationChannel = null;
+
+        try {
+            sourceChannel = new FileInputStream(source).getChannel();
+            destinationChannel = new FileOutputStream(destination).getChannel();
+            sourceChannel.transferTo(0, sourceChannel.size(),
+                    destinationChannel);
+        } finally {
+            if (sourceChannel != null && sourceChannel.isOpen())
+                sourceChannel.close();
+            if (destinationChannel != null && destinationChannel.isOpen())
+                destinationChannel.close();
+       }
+   }
+	
 }
