@@ -37,6 +37,7 @@ public class AudioStreamConverter extends Thread {
 				if (dir.listFiles() != null) {
 					for (File file: dir.listFiles()) {
 						String fileName = file.getName();
+						// Trata somente os streamings correntes e nao os de backup ou convertidos
 						if (!fileName.endsWith(".mp4") || fileName.indexOf("_") > -1)
 							continue;
 						fileName = fileName.replace(".mp4", "");
@@ -60,13 +61,13 @@ public class AudioStreamConverter extends Thread {
 
 		String urlAudio = "rtmp://localhost/sonyGuruAudio";
 		String urlFile = URL_AUDIO_STREAM + "/" + audioStream + ".mp4";
-		String cmd = String.format("sudo /opt/ffmpeg/ffmpeg -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
+		String command = String.format("/opt/ffmpeg/ffmpeg -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
 
 		try {
-			System.out.println(String.format("[%s] Converting: %s", sdf.format(new Date()), audioStream));
-			Process process = Runtime.getRuntime().exec(cmd);
+			System.out.println(String.format("[%s] Converting: %s - %s", sdf.format(new Date()), audioStream, command));
+			Process process = Runtime.getRuntime().exec(command);
 			process.waitFor();
-			pigeonhole(audioStream);
+			//pigeonhole(audioStream);
 			System.out.println(String.format("[%s] Finished: %s", sdf.format(new Date()), audioStream));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -80,26 +81,18 @@ public class AudioStreamConverter extends Thread {
 	private void pigeonhole(final String filter) {
 		
 		File dir = new File(URL_AUDIO_STREAM);
-		
-		FilenameFilter textFilter = new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				String lowercaseName = name.toLowerCase();
-				if (lowercaseName.startsWith(filter) && lowercaseName.endsWith(".mp4")) {
-					return true;
-				} else {
-					return false;
-				}
-			}
-		};
-		
-		File[] files = dir.listFiles(textFilter);
+		File[] files = dir.listFiles(new FileFilter(filter));
 		for (File file: files) {
 			if (!file.isDirectory()) {
 				try {
-					// Soh copia o arquivo principal
-					if (file.getName().equals(filter + ".mp4"))
-						copyFile(file, new File(URL_AUDIO_STREAM + "/bkp/" + file.getName()));
-					file.delete();
+					// So copia o arquivo principal
+					if (file.getName().equals(filter + ".mp4")) {
+						String dest = URL_AUDIO_STREAM + "/bkp/" + file.getName();
+						System.out.println("Copying " + file.getName() + " to " + dest);
+						copyFile(file, new File(dest));
+					}
+					boolean del = file.delete();
+					System.out.println("Removing " + file.getName() + " - " + del);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -127,6 +120,25 @@ public class AudioStreamConverter extends Thread {
             if (destinationChannel != null && destinationChannel.isOpen())
                 destinationChannel.close();
        }
-   }
+    }
+    
+    private class FileFilter implements FilenameFilter {
+    	
+    	private String prefix;
+    	
+    	public FileFilter(String prefix) {
+    		this.prefix = prefix;
+    	}
+    	
+    	public boolean accept(File dir, String name) {
+			String lowercaseName = name.toLowerCase();
+			if (lowercaseName.startsWith(prefix.toLowerCase()) && lowercaseName.endsWith(".mp4")) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+    	
+    }
 	
 }
