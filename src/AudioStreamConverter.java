@@ -14,7 +14,7 @@ public class AudioStreamConverter extends Thread {
 	private String audioStream;
 	private static final String URL_AUDIO_STREAM = "/usr/local/WowzaStreamingEngine/content/sonyGuruAudio";
 	private static List<String> listStreams = new ArrayList<String>();
-	private static SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:MM:ss");
+	private static SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
 	public AudioStreamConverter(String audioSream) {
 		this.audioStream = audioSream;
