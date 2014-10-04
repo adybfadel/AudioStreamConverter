@@ -1,0 +1,25 @@
+#! /bin/bash
+#
+# /etc/init.d/sg-video-snapshot
+ 
+case "$1" in
+    start)
+        echo "Iniciando AudioStreamConverter do SonyGuru..."
+        java -jar /opt/sonyguru/AudioStreamConverter.jar & echo $! > /opt/sonyguru/sg-audio-converter.pid
+        ;;
+ 
+    stop)
+        echo "Parando AudioStreamConverter do SonyGuru..."
+        kill `cat /opt/sonyguru/sg-audio-converter.pid`
+        ;;
+ 
+    restart)
+        echo "Reiniciando AudioStreamConverter do SonyGuru..."
+        kill `cat /opt/sonyguru/sg-audio-converter.pid`
+	   java -jar /opt/sonyguru/AudioStreamConverter.jar & echo $! > /opt/sonyguru/sg-audio-converter.pid
+        ;;
+ 
+    *)
+        echo "Opção inválida"
+        ;;
+esac

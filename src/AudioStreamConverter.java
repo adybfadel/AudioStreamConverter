@@ -67,7 +67,7 @@ public class AudioStreamConverter extends Thread {
 			System.out.println(String.format("[%s] Converting: %s - %s", sdf.format(new Date()), audioStream, command));
 			Process process = Runtime.getRuntime().exec(command);
 			process.waitFor();
-			//pigeonhole(audioStream);
+			pigeonhole(audioStream);
 			System.out.println(String.format("[%s] Finished: %s", sdf.format(new Date()), audioStream));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -82,11 +82,12 @@ public class AudioStreamConverter extends Thread {
 		
 		File dir = new File(URL_AUDIO_STREAM);
 		File[] files = dir.listFiles(new FileFilter(filter));
+		System.out.println(filter);
 		for (File file: files) {
 			if (!file.isDirectory()) {
 				try {
 					// So copia o arquivo principal
-					if (file.getName().equals(filter + ".mp4")) {
+					if (file.getName().equals(filter + "_android.mp4")) {
 						String dest = URL_AUDIO_STREAM + "/bkp/" + file.getName();
 						System.out.println("Copying " + file.getName() + " to " + dest);
 						copyFile(file, new File(dest));
