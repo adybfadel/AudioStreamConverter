@@ -3,6 +3,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,14 +17,28 @@ public class AudioStreamConverter extends Thread {
 	private static List<String> listStreams = new ArrayList<String>();
 	private static SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
+	private static File logFile = null;
+	
 	public AudioStreamConverter(String audioSream) {
 		this.audioStream = audioSream;
 	}
 
-	public static void main(String[] arqs) {
+	public static void main(String[] args) {
+		
+		if (args.length == 0 || !"-v".equals(args[0])) {
+			try {
+				logFile = new File("/opt/sonyguru/AudioStreamConverter.log");
+				if (!logFile.exists())
+					logFile.createNewFile();
+				System.setOut(new PrintStream(logFile));
+			} catch (Exception e) {
+				System.out.println("Error opening log file: " + logFile.getAbsolutePath());
+				e.printStackTrace();
+			}
+		}
 
 		try {
-			System.out.println(String.format("[%s] Audio converter started...", sdf.format(new Date())));
+			log(String.format("[%s] Audio converter started...", sdf.format(new Date())));
 			Runtime.getRuntime().exec("sudo su");
 		} catch (Exception e1) {
 			e1.printStackTrace();
@@ -55,6 +70,19 @@ public class AudioStreamConverter extends Thread {
 		}
 
 	}
+	
+	private static void log(String log) {
+		System.out.println(log);
+		if (logFile != null && logFile.length() >= 5000000) {
+			try {
+				copyFile(logFile, new File(logFile.getAbsolutePath().replace(".log", "_" + System.currentTimeMillis() + ".log")));
+				logFile.delete();
+				logFile.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	@Override
 	public void run() {
@@ -64,11 +92,11 @@ public class AudioStreamConverter extends Thread {
 		String command = String.format("/opt/ffmpeg/ffmpeg -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
 
 		try {
-			System.out.println(String.format("[%s] Converting: %s - %s", sdf.format(new Date()), audioStream, command));
+			log(String.format("[%s] Converting: %s - %s", sdf.format(new Date()), audioStream, command));
 			Process process = Runtime.getRuntime().exec(command);
 			process.waitFor();
 			pigeonhole(audioStream);
-			System.out.println(String.format("[%s] Finished: %s", sdf.format(new Date()), audioStream));
+			log(String.format("[%s] Finished: %s", sdf.format(new Date()), audioStream));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -82,18 +110,18 @@ public class AudioStreamConverter extends Thread {
 		
 		File dir = new File(URL_AUDIO_STREAM);
 		File[] files = dir.listFiles(new FileFilter(filter));
-		System.out.println(filter);
+		log(filter);
 		for (File file: files) {
 			if (!file.isDirectory()) {
 				try {
 					// So copia o arquivo principal
-					if (file.getName().equals(filter + "_android.mp4")) {
+					if (file.getName().equals(filter + ".mp4")) {
 						String dest = URL_AUDIO_STREAM + "/bkp/" + file.getName();
-						System.out.println("Copying " + file.getName() + " to " + dest);
+						log("Copying " + file.getName() + " to " + dest);
 						copyFile(file, new File(dest));
 					}
 					boolean del = file.delete();
-					System.out.println("Removing " + file.getName() + " - " + del);
+					log("Removing " + file.getName() + " - " + del);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
