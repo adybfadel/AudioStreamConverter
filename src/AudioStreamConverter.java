@@ -12,8 +12,11 @@ import java.util.List;
 
 public class AudioStreamConverter extends Thread {
 
-	private String audioStream;
 	private static final String URL_AUDIO_STREAM = "/usr/local/WowzaStreamingEngine/content/sonyGuruAudio";
+	private static final String LOG_FILE_NAME = "/opt/sonyguru/AudioStreamConverter.log";
+	private static final long LOG_FILE_SIZE = 5000000;
+
+	private String audioStream;
 	private static List<String> listStreams = new ArrayList<String>();
 	private static SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
@@ -27,9 +30,12 @@ public class AudioStreamConverter extends Thread {
 		
 		if (args.length == 0 || !"-v".equals(args[0])) {
 			try {
-				logFile = new File("/opt/sonyguru/AudioStreamConverter.log");
-				if (!logFile.exists())
+				logFile = new File(LOG_FILE_NAME);
+				if (logFile.exists()) {
+					copyFile(logFile, new File(logFile.getAbsolutePath().replace(".log", "_" + logFile.lastModified() + ".log")));
+					logFile.delete();
 					logFile.createNewFile();
+				}
 				System.setOut(new PrintStream(logFile));
 			} catch (Exception e) {
 				System.out.println("Error opening log file: " + logFile.getAbsolutePath());
@@ -38,7 +44,7 @@ public class AudioStreamConverter extends Thread {
 		}
 
 		try {
-			log(String.format("[%s] Audio converter started...", sdf.format(new Date())));
+			log("Audio converter started...");
 			Runtime.getRuntime().exec("sudo su");
 		} catch (Exception e1) {
 			e1.printStackTrace();
@@ -72,8 +78,8 @@ public class AudioStreamConverter extends Thread {
 	}
 	
 	private static void log(String log) {
-		System.out.println(log);
-		if (logFile != null && logFile.length() >= 5000000) {
+		System.out.println(String.format("[%s] %s", sdf.format(new Date()), log));
+		if (logFile != null && logFile.length() >= LOG_FILE_SIZE) {
 			try {
 				copyFile(logFile, new File(logFile.getAbsolutePath().replace(".log", "_" + System.currentTimeMillis() + ".log")));
 				logFile.delete();
@@ -92,11 +98,11 @@ public class AudioStreamConverter extends Thread {
 		String command = String.format("/opt/ffmpeg/ffmpeg -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
 
 		try {
-			log(String.format("[%s] Converting: %s - %s", sdf.format(new Date()), audioStream, command));
+			log(String.format("Converting: %s - %s", audioStream, command));
 			Process process = Runtime.getRuntime().exec(command);
 			process.waitFor();
 			pigeonhole(audioStream);
-			log(String.format("[%s] Finished: %s", sdf.format(new Date()), audioStream));
+			log(String.format("Finished: %s", audioStream));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
