@@ -121,7 +121,7 @@ public class AudioStreamConverter extends Thread {
 			if (!file.isDirectory()) {
 				try {
 					// So copia o arquivo principal
-					if (file.getName().equals(filter + ".mp4")) {
+					if (file.getName().equals(filter + "_android.mp4")) {
 						String dest = URL_AUDIO_STREAM + "/bkp/" + file.getName();
 						log("Copying " + file.getName() + " to " + dest);
 						copyFile(file, new File(dest));
