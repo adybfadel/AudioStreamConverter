@@ -1,4 +1,4 @@
-import java.io.File;
+ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
@@ -68,7 +68,7 @@ public class AudioStreamConverter extends Thread {
 						}
 					}
 				}
-				Thread.sleep(1000);
+				Thread.sleep(500);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -95,7 +95,7 @@ public class AudioStreamConverter extends Thread {
 
 		String urlAudio = "rtmp://localhost/sonyGuruAudio";
 		String urlFile = URL_AUDIO_STREAM + "/" + audioStream + ".mp4";
-		String command = String.format("/opt/ffmpeg/ffmpeg -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
+		String command = String.format("/opt/ffmpeg/ffmpeg -itsoffset -20 -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
 
 		try {
 			log(String.format("Converting: %s - %s", audioStream, command));
