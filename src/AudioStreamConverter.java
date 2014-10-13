@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.channels.FileChannel;
@@ -97,10 +98,11 @@ public class AudioStreamConverter extends Thread {
 		String command = String.format("/opt/ffmpeg/ffmpeg -i %s/%s -acodec libfaac -f flv %s/%s_android", urlAudio, audioStream, urlAudio, audioStream);
 
 		try {
-//			log(String.format("Converting: %s - %s", audioStream, command));
+			log(String.format("Converting: %s - %s", audioStream, command));
 			Process process = Runtime.getRuntime().exec(command);
 			process.waitFor();
-//			log(String.format("Finished: %s", audioStream));
+			pigeonhole(audioStream);
+			log(String.format("Finished: %s", audioStream));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -108,6 +110,30 @@ public class AudioStreamConverter extends Thread {
 		File file = new File(urlFile);
 		if (file.isFile())
 			listStreams.remove(audioStream);
+	}
+	
+	private void pigeonhole(final String filter) {
+		
+		File dir = new File(URL_AUDIO_STREAM);
+		File[] files = dir.listFiles(new FileFilter(filter));
+		log(filter);
+		for (File file: files) {
+			if (!file.isDirectory()) {
+				try {
+					// So copia o arquivo principal
+					if (file.getName().equals(filter + "_android.mp4")) {
+						String dest = URL_AUDIO_STREAM + "/bkp/" + file.getName();
+						log("Copying " + file.getName() + " to " + dest);
+						copyFile(file, new File(dest));
+					}
+					boolean del = file.delete();
+					log("Removing " + file.getName() + " - " + del);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
 	}
 
     public static void copyFile(File source, File destination) throws IOException {
@@ -131,4 +157,23 @@ public class AudioStreamConverter extends Thread {
        }
     }
     
+    private class FileFilter implements FilenameFilter {
+    	
+    	private String prefix;
+    	
+    	public FileFilter(String prefix) {
+    		this.prefix = prefix;
+    	}
+    	
+    	public boolean accept(File dir, String name) {
+			String lowercaseName = name.toLowerCase();
+			if (lowercaseName.startsWith(prefix.toLowerCase()) && lowercaseName.endsWith(".mp4")) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+    	
+    }
+	
 }
